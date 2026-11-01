@@ -1,0 +1,142 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Validation Helpers ---
+
+    function isValidCoach(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.role is string && data.role.size() <= 50 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
+             (!('branch' in data) || (data.branch is string && data.branch.size() <= 50)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidSession(data) {
+      return data.sessionId is string && data.sessionId.size() <= 128 &&
+             data.branch is string && data.branch.size() > 0 && data.branch.size() <= 50 &&
+             data.hall is string && data.hall.size() > 0 && data.hall.size() <= 100 &&
+             data.ageGroup is string && data.ageGroup.size() > 0 && data.ageGroup.size() <= 50 &&
+             data.gender is string && data.gender.size() > 0 && data.gender.size() <= 20 &&
+             data.date is string && data.date.size() >= 8 && data.date.size() <= 20 &&
+             data.startTime is string && data.startTime.size() >= 4 && data.startTime.size() <= 10 &&
+             data.endTime is string && data.endTime.size() >= 4 && data.endTime.size() <= 10 &&
+             data.coachId is string && data.coachId.size() <= 128 &&
+             data.status in ['Aktif', 'İptal', 'Değişti'] &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 100)) &&
+             (!('dayOfWeek' in data) || (data.dayOfWeek is string && data.dayOfWeek.size() <= 30)) &&
+             (!('coachName' in data) || (data.coachName is string && data.coachName.size() <= 100)) &&
+             (!('statusNote' in data) || (data.statusNote is string && data.statusNote.size() <= 300)) &&
+             (!('isMatch' in data) || data.isMatch is bool) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidWeeklyPlayer(data) {
+      return data.playerId is string && data.playerId.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.category is string && data.category.size() > 0 && data.category.size() <= 100 &&
+             data.branch is string && data.branch.size() > 0 && data.branch.size() <= 50 &&
+             data.votesCount is int && data.votesCount >= 0 &&
+             data.nominatedBy is string && data.nominatedBy.size() <= 128 &&
+             (!('achievement' in data) || (data.achievement is string && data.achievement.size() <= 300)) &&
+             (!('week' in data) || (data.week is string && data.week.size() <= 50)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidAnnouncement(data) {
+      return data.announcementId is string && data.announcementId.size() <= 128 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 150 &&
+             data.message is string && data.message.size() > 0 && data.message.size() <= 1000 &&
+             data.type is string && data.type.size() <= 50 &&
+             data.authorId is string && data.authorId.size() <= 128 &&
+             (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 100)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    // --- Collections ---
+
+    match /coaches/{userId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().createdAt is timestamp &&
+                       isValidCoach(incoming());
+      allow update: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidCoach(incoming());
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /sessions/{sessionId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() &&
+                       incoming().coachId == request.auth.uid &&
+                       incoming().createdAt is timestamp &&
+                       isValidSession(incoming());
+      allow update: if isSignedIn() &&
+                       (existing().coachId == request.auth.uid || incoming().coachId == request.auth.uid) &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidSession(incoming());
+      allow delete: if isSignedIn() && existing().coachId == request.auth.uid;
+    }
+
+    match /weekly_players/{playerId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() &&
+                       incoming().nominatedBy == request.auth.uid &&
+                       incoming().createdAt is timestamp &&
+                       isValidWeeklyPlayer(incoming());
+      allow update: if isSignedIn() &&
+                       isValidWeeklyPlayer(incoming()) &&
+                       (
+                         // Case A: Full update by nominator
+                         (existing().nominatedBy == request.auth.uid && incoming().createdAt == existing().createdAt) ||
+                         // Case B: Vote increment by users
+                         incoming().diff(existing()).affectedKeys().hasOnly(['votesCount', 'updatedAt'])
+                       );
+      allow delete: if isSignedIn() && existing().nominatedBy == request.auth.uid;
+    }
+
+    match /announcements/{announcementId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() &&
+                       incoming().authorId == request.auth.uid &&
+                       incoming().createdAt is timestamp &&
+                       isValidAnnouncement(incoming());
+      allow update: if isSignedIn() &&
+                       existing().authorId == request.auth.uid &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidAnnouncement(incoming());
+      allow delete: if isSignedIn() && existing().authorId == request.auth.uid;
+    }
+  }
+}

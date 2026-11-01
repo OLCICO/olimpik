@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Olimpik Spor</string>
+    <string name="club_title">Olimpik Spor Kulübü</string>
+    <string name="role_coach">Antrenör</string>
+    <string name="role_parent">Veli</string>
+    <!-- google-services.json içindeki Web client ID (client_type 3) -->
+    <string name="default_web_client_id" translatable="false">128612360374-p9am4bi3a6spu2i9mh2kfk9t93vrvk8b.apps.googleusercontent.com</string>
+</resources>

@@ -1,0 +1,6 @@
+{
+  "name": "Olimpik Spor",
+  "description": "Olimpik Spor Kulübü Antrenman ve Maç Takip Sistemi. Antrenör ve veliler için canlı idman saatleri, salon yönetimi, bildirimler ve haftanın oyuncusu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "Coach": {
+      "title": "Coach Profile",
+      "description": "Coach profile registered with Google Authentication",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "branch": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "role", "createdAt"]
+    },
+    "Session": {
+      "title": "Training Session or Match",
+      "description": "Sport training session or match scheduled by coach",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "title": { "type": "string" },
+        "branch": { "type": "string" },
+        "hall": { "type": "string" },
+        "ageGroup": { "type": "string" },
+        "gender": { "type": "string" },
+        "dayOfWeek": { "type": "string" },
+        "date": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "coachId": { "type": "string" },
+        "coachName": { "type": "string" },
+        "status": { "type": "string" },
+        "statusNote": { "type": "string" },
+        "isMatch": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sessionId", "branch", "hall", "ageGroup", "gender", "date", "startTime", "endTime", "coachId", "status", "createdAt"]
+    },
+    "WeeklyPlayer": {
+      "title": "Player of the Week",
+      "description": "Star player nomination and vote tracking",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "branch": { "type": "string" },
+        "achievement": { "type": "string" },
+        "week": { "type": "string" },
+        "votesCount": { "type": "integer" },
+        "nominatedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["playerId", "name", "category", "branch", "votesCount", "nominatedBy", "createdAt"]
+    },
+    "Announcement": {
+      "title": "Club Announcement",
+      "description": "Cancellation, reschedule or general announcement",
+      "type": "object",
+      "properties": {
+        "announcementId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["announcementId", "title", "message", "type", "authorId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/coaches/{userId}": {
+      "schema": "Coach",
+      "description": "Registered coach directory and profiles"
+    },
+    "/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Live training and match schedule records"
+    },
+    "/weekly_players/{playerId}": {
+      "schema": "WeeklyPlayer",
+      "description": "Player of the week nominations and voting tallies"
+    },
+    "/announcements/{announcementId}": {
+      "schema": "Announcement",
+      "description": "Club updates and session change notifications"
+    }
+  }
+}
